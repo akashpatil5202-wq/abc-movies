@@ -1,0 +1,15 @@
+{
+  "name": "ABC Movies",
+  "short_name": "ABCApp",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#e50914",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5977/5977590.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
