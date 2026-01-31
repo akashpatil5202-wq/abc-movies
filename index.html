@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ABC Movies - Local Storage Edition</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e50914">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Purana CSS waisa hi rahega */
+        :root { --netflix-red: #e50914; --bg: #000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: white; font-family: 'Helvetica Neue', sans-serif; overflow-x: hidden; }
+        #app-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .logo-text { color: var(--netflix-red); font-size: 4rem; font-weight: 900; }
+        header { position: fixed; top: 0; width: 100%; z-index: 1000; background: #000; padding: 12px 15px; display: flex; align-items: center; box-sizing: border-box; }
+        .search-container { flex-grow: 1; margin-left: 15px; }
+        .search-container input { width: 100%; padding: 8px 15px; background: #222; border: none; color: white; border-radius: 20px; outline: none; }
+        .tabs { display: flex; gap: 10px; padding: 75px 15px 10px; overflow-x: auto; scrollbar-width: none; background: #000; position: sticky; top: 0; z-index: 999; }
+        .tab { padding: 6px 15px; border: 1px solid #444; border-radius: 20px; font-size: 0.75rem; white-space: nowrap; color: #ccc; cursor: pointer; }
+        .tab.active { background: white; color: black; font-weight: bold; border: none; }
+        .movie-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 10px 100px; }
+        .m-card { position: relative; border-radius: 4px; overflow: hidden; background: #111; border: 0.5px solid #222; }
+        .m-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
+        .m-name { font-size: 0.65rem; padding: 5px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: #121212; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; z-index: 2000; }
+        .nav-link { color: #757575; text-align: center; font-size: 0.6rem; text-decoration: none; }
+        .nav-link.active { color: white; }
+        .panel { display: none; }
+        .active-panel { display: block; }
+        #player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; }
+        video { width: 100%; height: 100%; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; background: #333; border: none; color: white; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="app-loader"><div class="logo-text">ABC</div></div>
+
+    <header>
+        <span style="color:var(--netflix-red); font-weight:900; font-size: 1.5rem;">ABC</span>
+        <div class="search-container"><input type="text" id="movieSearch" placeholder="Search..." oninput="render(this.value)"></div>
+    </header>
+
+    <main>
+        <div id="home-view" class="panel active-panel">
+            <div class="tabs">
+                <div class="tab active" onclick="setIndustry('All', this)">All</div>
+                <div class="tab" onclick="setIndustry('Bollywood', this)">Bollywood</div>
+                <div class="tab" onclick="setIndustry('Hollywood', this)">Hollywood</div>
+            </div>
+            <div id="movie-grid" class="movie-grid"></div>
+        </div>
+
+        <div id="admin-view" class="panel" style="padding:100px 20px;">
+            <div style="background:#1a1a1a; padding:15px; border-radius:8px;">
+                <h3 style="color:var(--netflix-red)">Admin: Local Upload</h3>
+                <input type="text" id="m-name" placeholder="Movie Name">
+                <select id="m-ind">
+                    <option value="Bollywood">Bollywood</option>
+                    <option value="Hollywood">Hollywood</option>
+                </select>
+                <p style="font-size:0.7rem; color:grey;">Poster chunein:</p>
+                <input type="file" id="m-pos" accept="image/*">
+                <p style="font-size:0.7rem; color:grey;">Video chunein (Storage se):</p>
+                <input type="file" id="m-vid" accept="video/*">
+                
+                <button onclick="upload()" style="width:100%; padding:15px; background:var(--netflix-red); border:none; color:white; font-weight:bold; border-radius:4px;">ADD TO COLLECTION</button>
+            </div>
+            <div id="admin-list" style="margin-top:20px;"></div>
+        </div>
+    </main>
+
+    <nav>
+        <div class="nav-link active" onclick="showPanel('home')"><i class="fas fa-home"></i><br>Home</div>
+        <div class="nav-link" onclick="openAdmin()"><i class="fas fa-user-shield"></i><br>Admin</div>
+        <div class="nav-link" onclick="location.reload()"><i class="fas fa-redo"></i><br>Refresh</div>
+    </nav>
+
+    <div id="player">
+        <i class="fas fa-arrow-left" onclick="closeV()" style="position:absolute; top:20px; left:20px; z-index:5001; background:rgba(0,0,0,0.5); padding:10px; border-radius:50%;"></i>
+        <video id="vid" controls></video>
+    </div>
+
+    <script>
+        let db; let currentInd = 'All';
+        const PASS = "Akash$2009";
+
+        // Database setup
+        const req = indexedDB.open("ABC_Local_Storage_DB", 1);
+        req.onupgradeneeded = e => { db = e.target.result; db.createObjectStore("movies", {keyPath: "id"}); };
+        req.onsuccess = e => { db = e.target.result; render(); setTimeout(() => document.getElementById('app-loader').style.display='none', 1500); };
+
+        function upload() {
+            const name = document.getElementById('m-name').value;
+            const ind = document.getElementById('m-ind').value;
+            const pFile = document.getElementById('m-pos').files[0];
+            const vFile = document.getElementById('m-vid').files[0];
+
+            if(!name || !vFile) return alert("Naam aur Video zaroori hai!");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = {
+                    id: Date.now(),
+                    name: name,
+                    industry: ind,
+                    poster: e.target.result || 'https://via.placeholder.com/150',
+                    video: vFile // Poori file save hogi
+                };
+                
+                let tx = db.transaction("movies", "readwrite");
+                tx.objectStore("movies").add(data);
+                tx.oncomplete = () => { alert("Safalta se upload hui!"); render(); showPanel('home'); };
+                tx.onerror = () => { alert("Storage full ho sakti hai!"); };
+            };
+            if(pFile) reader.readAsDataURL(pFile);
+            else reader.onload({target: {result: ''}});
+        }
+
+        function render(query = "") {
+            const grid = document.getElementById('movie-grid');
+            db.transaction("movies").objectStore("movies").getAll().onsuccess = e => {
+                let list = e.target.result;
+                let filtered = list.filter(m => (currentInd === 'All' || m.industry === currentInd) && m.name.toLowerCase().includes(query.toLowerCase()));
+                grid.innerHTML = filtered.map(m => `
+                    <div class="m-card" onclick="playV(${m.id})">
+                        <img src="${m.poster}">
+                        <div class="m-name">${m.name}</div>
+                    </div>`).join('');
+                
+                document.getElementById('admin-list').innerHTML = list.map(m => `<div style="padding:10px; background:#222; margin-bottom:5px;">${m.name} <i class="fas fa-trash" onclick="del(${m.id})" style="color:red; float:right"></i></div>`).join('');
+            };
+        }
+
+        function playV(id) {
+            db.transaction("movies").objectStore("movies").get(id).onsuccess = e => {
+                const m = e.target.result;
+                const v = document.getElementById('vid');
+                // Video file ko temporary URL mein badalna
+                v.src = URL.createObjectURL(m.video);
+                document.getElementById('player').style.display = "block";
+                v.play();
+            };
+        }
+
+        function openAdmin() { if(prompt("Pass:") === PASS) showPanel('admin'); }
+        function showPanel(p) { document.querySelectorAll('.panel').forEach(v => v.classList.remove('active-panel')); document.getElementById(p + '-view').classList.add('active-panel'); }
+        function closeV() { document.getElementById('player').style.display = "none"; document.getElementById('vid').src = ""; }
+        function del(id) { if(confirm("Delete?")) db.transaction("movies", "readwrite").objectStore("movies").delete(id).oncomplete = render; }
+        function setIndustry(ind, btn) {
+            currentInd = ind;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            render();
+        }
+    </script>
+</body>
+</html>
