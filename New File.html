@@ -1,186 +1,232 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ABC Movies - Akash Edition</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#e50914">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5977/5977590.png">
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>Comic Pro: Ultimate Shapes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root { --netflix-red: #e50914; --bg: #000; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: white; font-family: 'Helvetica Neue', sans-serif; overflow-x: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Kalam:wght@700&display=swap');
+        body { overflow: hidden; position: fixed; width: 100%; height: 100%; background: #111; touch-action: none; }
+        .comic-font { font-family: 'Bangers', cursive; }
         
-        /* Splash Intro */
-        #app-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .logo-text { color: var(--netflix-red); font-size: 4rem; font-weight: 900; animation: netflix-intro 2.2s ease-in-out forwards; }
-        @keyframes netflix-intro { 0% { transform: scale(0.5); opacity: 0; } 40% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(12); opacity: 0; } }
+        .canvas-area { 
+            width: 95vw; height: 42vh; background: white; 
+            border: 5px solid #000; position: relative; 
+            margin: 5px auto; overflow: hidden; touch-action: none;
+            background-size: cover; background-position: center;
+        }
 
-        /* Header with Fast Search */
-        header { position: fixed; top: 0; width: 100%; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,1), transparent); padding: 12px 15px; display: flex; align-items: center; box-sizing: border-box; }
-        .search-container { flex-grow: 1; margin-left: 15px; }
-        .search-container input { width: 100%; padding: 8px 15px; background: #222; border: none; color: white; border-radius: 20px; font-size: 0.85rem; outline: none; }
+        .draggable-wrapper { position: absolute; cursor: move; touch-action: none; z-index: 10; display: inline-block; transform-origin: center; }
 
-        /* Tabs */
-        .tabs { display: flex; gap: 10px; padding: 75px 15px 10px; overflow-x: auto; scrollbar-width: none; background: #000; position: sticky; top: 0; z-index: 999; }
-        .tabs::-webkit-scrollbar { display: none; }
-        .tab { padding: 6px 15px; border: 1px solid #444; border-radius: 20px; font-size: 0.75rem; white-space: nowrap; color: #ccc; }
-        .tab.active { background: white; color: black; border: none; font-weight: bold; }
+        .delete-btn {
+            position: absolute; top: -15px; right: -15px; background: #ff4444; color: white; 
+            border-radius: 50%; width: 26px; height: 26px; display: flex;
+            align-items: center; justify-content: center; font-size: 12px; font-weight: bold;
+            border: 2px solid white; z-index: 5000;
+        }
 
-        /* Movie Grid */
-        .movie-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 10px 100px; }
-        .m-card { position: relative; border-radius: 4px; overflow: hidden; background: #111; border: 0.5px solid #222; }
-        .m-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
-        .m-info { padding: 5px; background: #111; text-align: center; }
-        .m-name { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-        .download-btn { font-size: 0.6rem; color: #00dfa2; text-decoration: none; display: block; }
+        /* --- Bubble Styles --- */
+        .shape-classic { border: 3px solid #000; border-radius: 20px; padding: 10px; background: white; }
+        .shape-cloud { border: 3px solid #000; border-radius: 50%; padding: 15px; background: white; }
+        .shape-shout { border: 4px solid #000; padding: 10px; background: #ff0; clip-path: polygon(0% 15%, 15% 15%, 15% 0%, 85% 0%, 85% 15%, 100% 15%, 100% 85%, 85% 85%, 85% 100%, 15% 100%, 15% 85%, 0% 85%); }
+        .shape-whisper { border: 2px dashed #666; border-radius: 30px; padding: 10px; background: rgba(255,255,255,0.8); font-style: italic; }
+        .shape-robot { border: 3px solid #000; background: #000; color: #0f0 !important; padding: 10px; font-family: monospace; }
+        .shape-shadow { border: 3px solid #000; background: white; padding: 10px; box-shadow: 8px 8px 0px rgba(0,0,0,0.2); }
 
-        .rating-tag { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: #ffc107; font-size: 0.55rem; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
-        .m-tag { position: absolute; top: 5px; left: 5px; background: var(--netflix-red); font-size: 0.5rem; padding: 2px 4px; border-radius: 2px; font-weight: bold; }
-
-        /* Nav */
-        nav { position: fixed; bottom: 0; width: 100%; height: 60px; background: rgba(18,18,18,0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #333; z-index: 2000; }
-        .nav-link { color: #757575; text-align: center; font-size: 0.6rem; flex: 1; }
-        .nav-link.active { color: white; }
-
-        /* Panels */
-        .panel { display: none; }
-        .active-panel { display: block; }
-        #player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; display: none; }
-        video { width: 100%; height: 100%; }
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; background: #333; border: none; color: white; border-radius: 4px; box-sizing: border-box; }
+        .bottom-menu {
+            position: fixed; bottom: 0; width: 100%; height: 52vh;
+            background: #1a1a1a; border-top: 5px solid #fbbf24;
+            padding: 12px; border-radius: 30px 30px 0 0; overflow-y: auto;
+        }
     </style>
 </head>
 <body>
 
-    <div id="app-loader"><div class="logo-text">ABC</div></div>
+    <div class="p-2 flex justify-between items-center px-4 bg-zinc-900">
+        <button onclick="changePage(-1)" class="bg-zinc-700 text-white px-4 py-2 rounded-xl text-xs font-bold">PREV</button>
+        <h1 class="comic-font text-xl text-yellow-400 italic">DESIGN STUDIO - PAGE <span id="pageNo">1</span></h1>
+        <button onclick="changePage(1)" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">NEXT</button>
+    </div>
 
-    <header>
-        <span style="color:var(--netflix-red); font-weight:900; font-size: 1.5rem;">ABC</span>
-        <div class="search-container">
-            <input type="text" id="movieSearch" placeholder="Search Movies..." oninput="render(this.value)">
-        </div>
-    </header>
+    <div id="comic-canvas" class="canvas-area"></div>
 
-    <main>
-        <div id="home-view" class="panel active-panel">
-            <div class="tabs">
-                <div class="tab active" onclick="setIndustry('All', this)">All</div>
-                <div class="tab" onclick="setIndustry('Bollywood', this)">Bollywood</div>
-                <div class="tab" onclick="setIndustry('Hollywood', this)">Hollywood</div>
-                <div class="tab" onclick="setIndustry('South Indian', this)">South Indian</div>
+    <div class="bottom-menu">
+        <div class="bg-zinc-800 p-3 rounded-2xl mb-3">
+            <input type="text" id="diagMsg" placeholder="Baat likhein..." class="w-full p-2 rounded-xl text-black font-bold mb-3 outline-none border-2 border-yellow-500">
+            
+            <p class="text-[10px] text-yellow-500 font-bold mb-2 uppercase">Select Style:</p>
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <button onclick="addBubble('shape-classic')" class="bg-white text-[10px] font-bold py-2 rounded border-2 border-black">NORMAL</button>
+                <button onclick="addBubble('shape-cloud')" class="bg-white text-[10px] font-bold py-2 rounded border-2 border-black">THOUGHT</button>
+                <button onclick="addBubble('shape-shout')" class="bg-yellow-400 text-[10px] font-bold py-2 rounded border-2 border-black">SHOUT</button>
+                <button onclick="addBubble('shape-whisper')" class="bg-gray-200 text-[10px] font-bold py-2 rounded border-2 border-black">WHISPER</button>
+                <button onclick="addBubble('shape-robot')" class="bg-black text-green-400 text-[10px] font-bold py-2 rounded border-2 border-green-400">ROBOT</button>
+                <button onclick="addBubble('shape-shadow')" class="bg-white text-[10px] font-bold py-2 rounded border-2 border-black shadow-md">MODERN</button>
             </div>
-            <div id="movie-grid" class="movie-grid"></div>
-        </div>
 
-        <div id="admin-view" class="panel" style="padding:100px 20px;">
-            <div style="background:#1a1a1a; padding:15px; border-radius:8px;">
-                <h3 style="color:var(--netflix-red)">Admin Upload</h3>
-                <input type="text" id="m-name" placeholder="Title">
-                <select id="m-ind">
-                    <option value="Bollywood">Bollywood</option>
-                    <option value="Hollywood">Hollywood</option>
-                    <option value="South Indian">South Indian</option>
-                </select>
-                <select id="m-rate">
-                    <option value="9.5">⭐ 9.5</option>
-                    <option value="8.5">⭐ 8.5</option>
-                    <option value="7.5">⭐ 7.5</option>
-                </select>
-                <input type="file" id="m-pos" accept="image/*">
-                <input type="file" id="m-vid" accept="video/*">
-                <button onclick="upload()" style="width:100%; padding:15px; background:var(--netflix-red); border:none; color:white; font-weight:bold; border-radius:4px;">ADD MOVIE</button>
+            <div class="flex gap-2">
+                <input type="color" id="bgColor" value="#ffffff" class="flex-1 h-8 rounded">
+                <input type="color" id="txtColor" value="#000000" class="flex-1 h-8 rounded">
             </div>
-            <div id="admin-list" style="margin-top:20px;"></div>
         </div>
-    </main>
 
-    <nav>
-        <div class="nav-link active" onclick="showPanel('home')"><i class="fas fa-home"></i><br>Home</div>
-        <div class="nav-link" onclick="openAdmin()"><i class="fas fa-user-shield"></i><br>Admin</div>
-        <div class="nav-link" onclick="location.reload()"><i class="fas fa-redo"></i><br>Refresh</div>
-    </nav>
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="document.getElementById('charInp').click()" class="bg-blue-500 text-white p-3 rounded-xl font-bold text-[10px] uppercase">Add Character</button>
+            <input type="file" id="charInp" hidden onchange="addAsset(event)">
+            
+            <button onclick="document.getElementById('bgInp').click()" class="bg-green-600 text-white p-3 rounded-xl font-bold text-[10px] uppercase">Add Background</button>
+            <input type="file" id="bgInp" hidden onchange="addBackground(event)">
+        </div>
 
-    <div id="player">
-        <i class="fas fa-arrow-left" onclick="closeV()" style="position:absolute; top:20px; left:20px; z-index:5001; background:rgba(0,0,0,0.5); padding:10px; border-radius:50%;"></i>
-        <video id="vid" controls></video>
+        <button onclick="exportToDevice()" class="w-full mt-3 bg-yellow-400 text-black p-3 rounded-xl font-black text-xs uppercase border-2 border-black">Download This Page (PNG)</button>
+        <button onclick="clearAll()" class="w-full mt-2 bg-red-600 text-white p-2 rounded-xl font-bold text-[10px] uppercase">Clear Everything</button>
     </div>
 
     <script>
-        // Service Worker Registration for PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error", err));
-        }
+        let currentPage = 1;
+        let pagesData = {};
+        let globalZIndex = 1000;
 
-        let db; let currentInd = 'All';
-        const ADMIN_PASS = "Akash$2009";
+        // Load Data on Startup
+        window.onload = () => {
+            const saved = localStorage.getItem('comic_data_pro');
+            if(saved) {
+                pagesData = JSON.parse(saved);
+                loadPageContent();
+            }
+        };
 
-        const req = indexedDB.open("ABCAppDB", 1);
-        req.onupgradeneeded = e => { db = e.target.result; db.createObjectStore("movies", {keyPath: "id"}); };
-        req.onsuccess = e => { db = e.target.result; render(); setTimeout(() => document.getElementById('app-loader').style.display = 'none', 2200); };
-
-        function render(query = "") {
-            const grid = document.getElementById('movie-grid');
-            const alist = document.getElementById('admin-list');
-            db.transaction("movies").objectStore("movies").getAll().onsuccess = e => {
-                let list = e.target.result;
-                let filtered = list.filter(m => (currentInd === 'All' || m.industry === currentInd) && m.name.toLowerCase().includes(query.toLowerCase()));
-
-                grid.innerHTML = filtered.length ? filtered.map(m => {
-                    const videoUrl = URL.createObjectURL(m.video);
-                    return `
-                    <div class="m-card">
-                        <div class="m-tag">${m.industry.split(' ')[0]}</div>
-                        <img src="${m.poster}" onclick="playV(${m.id})">
-                        <div class="rating-tag">⭐ ${m.rating}</div>
-                        <div class="m-info">
-                            <div class="m-name">${m.name}</div>
-                            <a href="${videoUrl}" download="${m.name}.mp4" class="download-btn"><i class="fas fa-download"></i> Save</a>
-                        </div>
-                    </div>`;
-                }).join('') : `<div style="grid-column:1/4;text-align:center;padding:50px;color:#555">Nothing found...</div>`;
-
-                alist.innerHTML = list.map(m => `<div style="padding:10px; background:#222; margin-bottom:5px;">${m.name} <i class="fas fa-trash" onclick="del(${m.id})" style="color:red; float:right"></i></div>`).join('');
+        function saveCurrentState() {
+            pagesData[currentPage] = {
+                html: document.getElementById('comic-canvas').innerHTML,
+                bg: document.getElementById('comic-canvas').style.backgroundImage
             };
+            localStorage.setItem('comic_data_pro', JSON.stringify(pagesData));
         }
 
-        function upload() {
-            const name = document.getElementById('m-name').value;
-            const ind = document.getElementById('m-ind').value;
-            const rate = document.getElementById('m-rate').value;
-            const p = document.getElementById('m-pos').files[0];
-            const v = document.getElementById('m-vid').files[0];
-            if(!name || !p || !v) return alert("Fill all fields!");
+        function loadPageContent() {
+            const canvas = document.getElementById('comic-canvas');
+            canvas.innerHTML = pagesData[currentPage]?.html || "";
+            canvas.style.backgroundImage = pagesData[currentPage]?.bg || "";
+            document.getElementById('pageNo').innerText = currentPage;
+            
+            // Re-attach events to loaded elements
+            document.querySelectorAll('.draggable-wrapper').forEach(el => initActions(el));
+        }
+
+        function addBubble(style) {
+            const msg = document.getElementById('diagMsg').value || "Hello!";
+            const bbl = document.createElement('div');
+            bbl.className = style + " font-bold text-center";
+            bbl.innerText = msg;
+            if(style !== 'shape-robot') {
+                bbl.style.backgroundColor = document.getElementById('bgColor').value;
+                bbl.style.color = document.getElementById('txtColor').value;
+            }
+            document.getElementById('comic-canvas').appendChild(createWrapper(bbl));
+            document.getElementById('diagMsg').value = "";
+            saveCurrentState();
+        }
+
+        function createWrapper(el) {
+            const wrapper = document.createElement('div');
+            wrapper.className = "draggable-wrapper";
+            const del = document.createElement('div');
+            del.className = "delete-btn"; del.innerHTML = "X";
+            del.onclick = (e) => { e.stopPropagation(); wrapper.remove(); saveCurrentState(); };
+            wrapper.appendChild(del);
+            wrapper.appendChild(el);
+            wrapper.style.left = "20px"; wrapper.style.top = "20px";
+            initActions(wrapper);
+            return wrapper;
+        }
+
+        function addAsset(e) {
             const reader = new FileReader();
-            reader.onload = e => {
-                db.transaction("movies", "readwrite").objectStore("movies").add({ id: Date.now(), name, industry: ind, rating: rate, poster: e.target.result, video: v });
-                render(); showPanel('home');
+            reader.onload = (ev) => {
+                const img = document.createElement('img');
+                img.src = ev.target.result; img.className = "w-32";
+                document.getElementById('comic-canvas').appendChild(createWrapper(img));
+                saveCurrentState();
             };
-            reader.readAsDataURL(p);
+            reader.readAsDataURL(e.target.files[0]);
         }
 
-        function playV(id) {
-            db.transaction("movies").objectStore("movies").get(id).onsuccess = e => {
-                const v = document.getElementById('vid');
-                v.src = URL.createObjectURL(e.target.result.video);
-                document.getElementById('player').style.display = "block";
-                v.play();
+        function addBackground(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('comic-canvas').style.backgroundImage = `url(${ev.target.result})`;
+                saveCurrentState();
             };
+            reader.readAsDataURL(e.target.files[0]);
         }
 
-        function openAdmin() { if(prompt("Pass:") === ADMIN_PASS) showPanel('admin'); else alert("Wrong!"); }
-        function showPanel(p) { document.querySelectorAll('.panel').forEach(v => v.classList.remove('active-panel')); document.getElementById(p + '-view').classList.add('active-panel'); }
-        function closeV() { document.getElementById('player').style.display = "none"; document.getElementById('vid').src = ""; }
-        function del(id) { if(confirm("Delete?")) db.transaction("movies", "readwrite").objectStore("movies").delete(id).oncomplete = render; }
-        function setIndustry(ind, btn) {
-            currentInd = ind;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            btn.classList.add('active');
-            render(document.getElementById('movieSearch').value);
+        function initActions(el) {
+            let active = false, currentX = 0, currentY = 0, initialX, initialY, xOff = 0, yOff = 0, scale = 1, lastDist = 0;
+
+            const start = (e) => {
+                active = true; globalZIndex++; el.style.zIndex = globalZIndex;
+                let cx = (e.touches) ? e.touches[0].clientX : e.clientX;
+                let cy = (e.touches) ? e.touches[0].clientY : e.clientY;
+                initialX = cx - xOff; initialY = cy - yOff;
+            };
+
+            const move = (e) => {
+                if (active && (!e.touches || e.touches.length === 1)) {
+                    let cx = (e.touches) ? e.touches[0].clientX : e.clientX;
+                    let cy = (e.touches) ? e.touches[0].clientY : e.clientY;
+                    currentX = cx - initialX; currentY = cy - initialY;
+                    xOff = currentX; yOff = currentY;
+                    el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) scale(${scale})`;
+                }
+                if (e.touches && e.touches.length === 2) {
+                    let dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    if (lastDist > 0) {
+                        scale += (dist - lastDist) / 150;
+                        scale = Math.min(Math.max(0.3, scale), 5);
+                        el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) scale(${scale})`;
+                    }
+                    lastDist = dist;
+                }
+            };
+
+            el.addEventListener("touchstart", start, {passive:false});
+            document.addEventListener("touchmove", move, {passive:false});
+            document.addEventListener("touchend", () => { active = false; lastDist = 0; saveCurrentState(); });
+            el.addEventListener("mousedown", start);
+            document.addEventListener("mousemove", move);
+            document.addEventListener("mouseup", () => { active = false; saveCurrentState(); });
+        }
+
+        function changePage(step) {
+            saveCurrentState();
+            if (currentPage + step < 1) return;
+            currentPage += step;
+            loadPageContent();
+        }
+
+        function exportToDevice() {
+            const canvas = document.getElementById('comic-canvas');
+            // Hide delete buttons for photo
+            document.querySelectorAll('.delete-btn').forEach(b => b.style.display = 'none');
+
+            html2canvas(canvas, { useCORS: true, backgroundColor: null }).then(canvasImg => {
+                const link = document.createElement('a');
+                link.download = `my-comic-page-${currentPage}.png`;
+                link.href = canvasImg.toDataURL("image/png");
+                link.click();
+                document.querySelectorAll('.delete-btn').forEach(b => b.style.display = 'flex');
+            });
+        }
+
+        function clearAll() {
+            if(confirm("Kya aap poora data delete karna chahte hain?")) {
+                localStorage.clear();
+                location.reload();
+            }
         }
     </script>
 </body>
